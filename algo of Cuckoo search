@@ -1,0 +1,49 @@
+FUNCTION euclidean_distance(city1, city2)
+    RETURN sqrt((city1[0] - city2[0])^2 + (city1[1] - city2[1])^2)
+
+FUNCTION fitness(tour, cities)
+    total_distance = 0
+    FOR i = 1 to len(tour) - 1
+        total_distance += euclidean_distance(cities[tour[i]], cities[tour[i + 1]])
+    END FOR
+    RETURN total_distance + euclidean_distance(cities[tour[-1]], cities[tour[0]])
+
+FUNCTION levy_flight(dim, beta = 1.5)
+    RETURN random_normal(0, 1, dim) / (abs(random_normal(0, 1, dim))^(1 / beta))
+
+FUNCTION initialize_population(n, dim)
+    RETURN [random_permutation(dim) for _ in range(n)]
+
+FUNCTION cuckoo_search(cities, n, Pa, Maxt)
+    nests = initialize_population(n, len(cities))
+    fitness_values = [fitness(nest, cities) for nest in nests]
+    best_solution, best_fitness = min(zip(nests, fitness_values), key=lambda x: x[1])
+
+    t = 0
+    WHILE t < Maxt
+        new_nests = nests.copy()
+        FOR i = 1 to n
+            swap_idx = random_choice(len(cities), 2)
+            new_nests[i][swap_idx] = new_nests[i][swap_idx[::-1]]
+        END FOR
+        
+        new_fitness_values = [fitness(nest, cities) for nest in new_nests]
+        FOR i = 1 to n
+            IF new_fitness_values[i] < fitness_values[i]
+                nests[i] = new_nests[i]
+                fitness_values[i] = new_fitness_values[i]
+            END IF
+        END FOR
+
+        FOR i = 1 to n
+            IF random() < Pa
+                nests[i] = random_permutation(len(cities))
+                fitness_values[i] = fitness(nests[i], cities)
+            END IF
+        END FOR
+
+        best_solution, best_fitness = min(zip(nests, fitness_values), key=lambda x: x[1])
+        PRINT "Iteration", t, "Best Distance:", best_fitness
+        t += 1
+
+    RETURN best_solution, best_fitness
